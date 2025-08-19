@@ -348,6 +348,50 @@ router.post('/:boardId/collaborators', isAuthenticated, isBoardOwner, async (req
   }
 });
 
+// @route   PUT /api/boards/:boardId/collaborators/:userId
+// @desc    Update collaborator role
+// @access  Private (board owner only)
+router.put('/:boardId/collaborators/:userId', isAuthenticated, isBoardOwner, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+    
+    // Validate role
+    if (!['view', 'edit', 'admin'].includes(role)) {
+      return res.status(400).json({ 
+        message: 'Invalid role. Must be view, edit, or admin' 
+      });
+    }
+    
+    // Find and update collaborator
+    const collaboratorIndex = req.board.collaborators.findIndex(
+      collab => collab.user.toString() === userId
+    );
+    
+    if (collaboratorIndex === -1) {
+      return res.status(404).json({ 
+        message: 'Collaborator not found' 
+      });
+    }
+    
+    // Update role
+    req.board.collaborators[collaboratorIndex].role = role;
+    req.board.collaborators[collaboratorIndex].updatedAt = new Date();
+    
+    await req.board.save();
+    await req.board.populate('collaborators.user', 'name email avatar');
+    
+    res.json({
+      success: true,
+      message: 'Collaborator role updated successfully',
+      collaborator: req.board.collaborators[collaboratorIndex]
+    });
+  } catch (error) {
+    console.error('Error updating collaborator role:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // @route   DELETE /api/boards/:boardId/collaborators/:userId
 // @desc    Remove collaborator from board
 // @access  Private (board owner only)

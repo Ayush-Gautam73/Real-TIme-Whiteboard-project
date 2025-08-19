@@ -466,6 +466,53 @@ module.exports = (io) => {
       }
     });
 
+    // Handle permission updates
+    socket.on('permission-updated', (data) => {
+      const { userId, newRole, boardId } = data;
+      console.log(`Broadcasting permission update: User ${userId} -> ${newRole} on board ${boardId}`);
+      
+      // Broadcast to all users in the board except sender
+      socket.to(boardId).emit('permission-updated', {
+        userId,
+        newRole,
+        boardId,
+        updatedBy: socket.userId,
+        timestamp: new Date()
+      });
+    });
+
+    // Handle user removal
+    socket.on('user-removed', (data) => {
+      const { userId, boardId } = data;
+      console.log(`Broadcasting user removal: User ${userId} from board ${boardId}`);
+      
+      // Find the socket of the user being removed
+      const removedUserData = activeUsers.get(userId);
+      if (removedUserData) {
+        const removedUserSocket = io.sockets.sockets.get(removedUserData.socketId);
+        if (removedUserSocket) {
+          // Notify the removed user
+          removedUserSocket.emit('user-removed', {
+            userId,
+            boardId,
+            removedBy: socket.userId,
+            timestamp: new Date()
+          });
+          
+          // Remove them from the board room
+          handleUserLeaveBoard(removedUserSocket, boardId);
+        }
+      }
+
+      // Broadcast to other users in the board
+      socket.to(boardId).emit('user-removed', {
+        userId,
+        boardId,
+        removedBy: socket.userId,
+        timestamp: new Date()
+      });
+    });
+
     // Handle disconnect
     socket.on('disconnect', () => {
       console.log(`User ${socket.user.name} disconnected`);
