@@ -375,4 +375,286 @@ router.delete('/:boardId/collaborators/:userId', isAuthenticated, isBoardOwner, 
   }
 });
 
+// @route   POST /api/boards/:id/share
+// @desc    Generate a share link for a board
+// @access  Private (Owner or Admin)
+router.post('/:id/share', isAuthenticated, async (req, res) => {
+  try {
+    console.log('🔗 Creating share link for board:', req.params.id);
+    console.log('📝 Request body:', req.body);
+    console.log('👤 User:', req.user?._id);
+    
+    const { permissions = 'view', expiresIn = '7d', description = '' } = req.body;
+    const board = await Board.findById(req.params.id);
+    
+    if (!board) {
+      console.log('❌ Board not found');
+      return res.status(404).json({ message: 'Board not found' });
+    }
+    
+    console.log('✅ Board found:', board.title);
+    
+    // Check if user has permission to create share links
+    const isOwner = board.owner.toString() === req.user._id.toString();
+    
+    if (!isOwner) {
+      const userCollaboration = board.collaborators.find(
+        collab => collab.user.toString() === req.user._id.toString()
+      );
+      
+      // Non-owners cannot create admin share links
+      if (permissions === 'admin') {
+        return res.status(403).json({ 
+          message: 'Only board owners can create admin share links' 
+        });
+      }
+      
+      // Non-owners need at least editor role to create edit links
+      if (!userCollaboration || (userCollaboration.role !== 'editor' && permissions !== 'view')) {
+        return res.status(403).json({ message: 'Permission denied' });
+      }
+    }
+    
+    // Generate secure token
+    const crypto = require('crypto');
+    const shareToken = crypto.randomBytes(32).toString('hex');
+    
+    // Calculate expiration date
+    let expiresAt = null;
+    if (expiresIn !== 'never') {
+      const ms = require('ms');
+      expiresAt = new Date(Date.now() + ms(expiresIn));
+    }
+    
+    // Add share link to board
+    board.shareLinks.push({
+      token: shareToken,
+      permissions,
+      createdBy: req.user._id,
+      expiresAt,
+      description,
+      isActive: true
+    });
+    
+    await board.save();
+    
+    const shareUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/share/${shareToken}`;
+    
+    res.json({
+      shareUrl,
+      token: shareToken,
+      permissions,
+      expiresAt,
+      description,
+      message: 'Share link created successfully'
+    });
+  } catch (error) {
+    console.error('❌ Error creating share link:', error);
+    console.error('📄 Error details:', {
+      message: error.message,
+      stack: error.stack,
+      boardId: req.params.id,
+      userId: req.user?._id
+    });
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// @route   GET /api/boards/access/:token
+// @desc    Access board via share link
+// @access  Public
+router.get('/access/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    
+    // Find board with this share token
+    const board = await Board.findOne({
+      'shareLinks.token': token,
+      'shareLinks.isActive': true,
+      $or: [
+        { 'shareLinks.expiresAt': null },
+        { 'shareLinks.expiresAt': { $gt: new Date() } }
+      ]
+    })
+      .populate('owner', 'name email avatar')
+      .populate('collaborators.user', 'name email avatar')
+      .populate('shareLinks.createdBy', 'name email');
+    
+    if (!board) {
+      return res.status(404).json({ message: 'Invalid or expired share link' });
+    }
+    
+    // Find the specific share link
+    const shareLink = board.shareLinks.find(link => 
+      link.token === token && 
+      link.isActive && 
+      (!link.expiresAt || link.expiresAt > new Date())
+    );
+    
+    if (!shareLink) {
+      return res.status(404).json({ message: 'Invalid or expired share link' });
+    }
+    
+    // Update access tracking
+    shareLink.accessCount += 1;
+    shareLink.lastAccessed = new Date();
+    await board.save();
+    
+    // Return board data with permission level
+    res.json({
+      board: {
+        _id: board._id,
+        title: board.title,
+        description: board.description,
+        elements: board.elements,
+        owner: board.owner,
+        lastModified: board.lastModified,
+        lastModifiedBy: board.lastModifiedBy
+      },
+      permissions: shareLink.permissions,
+      accessType: 'share_link',
+      message: 'Access granted via share link'
+    });
+  } catch (error) {
+    console.error('Error accessing board via share link:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// @route   GET /api/boards/:id/share-links
+// @desc    Get all share links for a board
+// @access  Private (Owner or Admin)
+router.get('/:id/share-links', isAuthenticated, async (req, res) => {
+  try {
+    const board = await Board.findById(req.params.id)
+      .populate('shareLinks.createdBy', 'name email avatar');
+    
+    if (!board) {
+      return res.status(404).json({ message: 'Board not found' });
+    }
+    
+    // Check permissions
+    if (board.owner.toString() !== req.user._id.toString()) {
+      const userCollaboration = board.collaborators.find(
+        collab => collab.user.toString() === req.user._id.toString()
+      );
+      if (!userCollaboration || userCollaboration.role !== 'editor') {
+        return res.status(403).json({ message: 'Permission denied' });
+      }
+    }
+    
+    res.json({
+      shareLinks: board.shareLinks.map(link => ({
+        _id: link._id,
+        token: link.token,
+        permissions: link.permissions,
+        createdBy: link.createdBy,
+        createdAt: link.createdAt,
+        expiresAt: link.expiresAt,
+        isActive: link.isActive,
+        accessCount: link.accessCount,
+        lastAccessed: link.lastAccessed,
+        description: link.description,
+        shareUrl: `${process.env.CLIENT_URL || 'http://localhost:3000'}/share/${link.token}`
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching share links:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// @route   PUT /api/boards/:id/share-links/:linkId
+// @desc    Update a share link
+// @access  Private (Owner or Creator of link)
+router.put('/:id/share-links/:linkId', isAuthenticated, async (req, res) => {
+  try {
+    const { permissions, isActive, description, expiresIn } = req.body;
+    const board = await Board.findById(req.params.id);
+    
+    if (!board) {
+      return res.status(404).json({ message: 'Board not found' });
+    }
+    
+    const shareLink = board.shareLinks.id(req.params.linkId);
+    if (!shareLink) {
+      return res.status(404).json({ message: 'Share link not found' });
+    }
+    
+    // Check permissions
+    const isOwner = board.owner.toString() === req.user._id.toString();
+    const isCreator = shareLink.createdBy.toString() === req.user._id.toString();
+    
+    if (!isOwner && !isCreator) {
+      return res.status(403).json({ message: 'Permission denied' });
+    }
+    
+    // Update fields
+    if (permissions !== undefined) shareLink.permissions = permissions;
+    if (isActive !== undefined) shareLink.isActive = isActive;
+    if (description !== undefined) shareLink.description = description;
+    
+    if (expiresIn !== undefined) {
+      if (expiresIn === 'never') {
+        shareLink.expiresAt = null;
+      } else {
+        const ms = require('ms');
+        shareLink.expiresAt = new Date(Date.now() + ms(expiresIn));
+      }
+    }
+    
+    await board.save();
+    
+    res.json({
+      shareLink: {
+        _id: shareLink._id,
+        token: shareLink.token,
+        permissions: shareLink.permissions,
+        isActive: shareLink.isActive,
+        expiresAt: shareLink.expiresAt,
+        description: shareLink.description
+      },
+      message: 'Share link updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating share link:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// @route   DELETE /api/boards/:id/share-links/:linkId
+// @desc    Delete/revoke a share link
+// @access  Private (Owner or Creator of link)
+router.delete('/:id/share-links/:linkId', isAuthenticated, async (req, res) => {
+  try {
+    const board = await Board.findById(req.params.id);
+    
+    if (!board) {
+      return res.status(404).json({ message: 'Board not found' });
+    }
+    
+    const shareLink = board.shareLinks.id(req.params.linkId);
+    if (!shareLink) {
+      return res.status(404).json({ message: 'Share link not found' });
+    }
+    
+    // Check permissions
+    const isOwner = board.owner.toString() === req.user._id.toString();
+    const isCreator = shareLink.createdBy.toString() === req.user._id.toString();
+    
+    if (!isOwner && !isCreator) {
+      return res.status(403).json({ message: 'Permission denied' });
+    }
+    
+    // Remove the share link
+    board.shareLinks.pull(req.params.linkId);
+    await board.save();
+    
+    res.json({ message: 'Share link revoked successfully' });
+  } catch (error) {
+    console.error('Error revoking share link:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 module.exports = router;

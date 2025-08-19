@@ -262,6 +262,46 @@ const boardSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   },
+  shareLinks: [{
+    token: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
+    permissions: {
+      type: String,
+      enum: ['view', 'edit', 'admin'],
+      default: 'view',
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+    expiresAt: {
+      type: Date,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    accessCount: {
+      type: Number,
+      default: 0,
+    },
+    lastAccessed: {
+      type: Date,
+    },
+    description: {
+      type: String,
+      maxlength: 200,
+    },
+  }],
 }, {
   timestamps: true,
 });
