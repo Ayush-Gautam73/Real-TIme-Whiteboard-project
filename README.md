@@ -1,229 +1,163 @@
 # MERN Dashboard - Real-time Collaborative Canvas
 
-A comprehensive MERN stack application featuring real-time collaborative canvas with advanced sharing capabilities.
+A modern collaborative whiteboard application built with the MERN stack, featuring real-time editing, advanced sharing controls, and comprehensive drawing tools.
+
+![MERN Stack](https://img.shields.io/badge/Stack-MERN-brightgreen)
+![License](https://img.shields.io/badge/License-MIT-blue)
+![Node.js](https://img.shields.io/badge/Node.js-18+-green)
+![React](https://img.shields.io/badge/React-18+-blue)
 
 ## ✨ Features
 
 ### 🎨 Real-time Collaboration
-- **Socket.IO Integration**: Live element synchronization across multiple users
-- **Multi-user Cursors**: Real-time cursor tracking and user presence indicators
-- **Collaborative Drawing**: Simultaneous editing with conflict resolution
+- **Live Synchronization**: Multiple users can edit simultaneously with instant updates
+- **User Presence**: See who's online with real-time cursor tracking
+- **Conflict Resolution**: Smart handling of concurrent edits
 
-### 🔗 Advanced Share System
-- **Granular Permissions**: View, Edit, and Admin access levels
-- **Smart Expiration**: Configurable link expiration (1h, 1d, 7d, 30d, never)
-- **Link Management**: Create, view, and revoke share links with descriptions
-- **Inline Copy**: Dual copy functionality with visual feedback
+### 🔗 Advanced Sharing System
+- **Granular Permissions**: Configure view, edit, or admin access
+- **Smart Expiration**: Set link expiration (1h, 1d, 7d, 30d, or never)
+- **Link Management**: Create, manage, and revoke share links easily
+
+### 🎯 Drawing Tools
+- **Text & Shapes**: Add text, rectangles, circles, and arrows
+- **Freehand Drawing**: Natural drawing with customizable brush tools
+- **Zoom & Pan**: Navigate large canvases with smooth interactions
+- **Undo/Redo**: Full history management for all actions
 
 ### 🔐 Security & Authentication
-- **JWT Authentication**: Secure user authentication and session management
-- **Role-based Access**: Owner verification for admin operations
-- **Permission Control**: Admin rights restricted to board creators
-- **Secure Tokens**: Cryptographically secure share link generation
+- **JWT Authentication**: Secure user sessions and API access
+- **Role-based Access**: Owner-controlled board permissions
+- **Secure Sharing**: Cryptographically secure share tokens
 
-### 🎨 Modern UI/UX
-- **Dark Theme**: Consistent dark interface with green accent navbar
-- **Responsive Design**: Mobile-friendly responsive layout
-- **Interactive Feedback**: Visual confirmations and loading states
-- **Clean Architecture**: Modular component design
+### 🎨 Modern Interface
+- **Responsive Design**: Works seamlessly on desktop and mobile
+- **Dark Theme**: Easy-on-the-eyes interface with intuitive controls
+- **Export Options**: Save boards as PNG or PDF files
 
 ## 🛠️ Tech Stack
 
-### Frontend
-- **React.js** - Modern UI library with hooks
-- **Tailwind CSS** - Utility-first CSS framework
-- **Socket.IO Client** - Real-time bidirectional communication
-- **React Router** - Client-side routing
+**Frontend:**
+- React.js with Hooks & Context API
+- Tailwind CSS for styling
+- Socket.IO Client for real-time features
+- Lucide React for icons
 
-### Backend
-- **Node.js** - JavaScript runtime environment
-- **Express.js** - Web application framework
-- **MongoDB** - NoSQL database with Mongoose ODM
-- **Socket.IO** - Real-time engine
-- **JWT** - JSON Web Token authentication
+**Backend:**
+- Node.js & Express.js
+- MongoDB with Mongoose ODM
+- Socket.IO for WebSocket communication
+- JWT for authentication
 
-### Development Tools
-- **ESLint** - Code linting and formatting
-- **Nodemon** - Development server auto-restart
-- **Concurrently** - Run multiple scripts simultaneously
+**DevOps:**
+- Environment-based configuration
+- Production-ready deployment setup
 
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js (v14 or higher)
-- MongoDB (local or Atlas)
+- Node.js (v18 or higher)
+- MongoDB (local installation or MongoDB Atlas)
 - Git
 
 ### Installation
 
-1. **Clone the repository**
+1. **Clone and install dependencies**
    ```bash
    git clone https://github.com/yourusername/mern-dashboard.git
    cd mern-dashboard
-   ```
-
-2. **Install server dependencies**
-   ```bash
-   cd server
-   npm install
-   ```
-
-3. **Install client dependencies**
-   ```bash
-   cd ../client
-   npm install
-   ```
-
-4. **Environment Setup**
    
-   Create `.env` file in the server directory:
-   ```env
-   MONGODB_URI=mongodb://localhost:27017/mern-dashboard
-   JWT_SECRET=your-super-secret-jwt-key
-   PORT=5000
-   NODE_ENV=development
-   ```
-
-   Create `.env` file in the client directory:
-   ```env
-   REACT_APP_API_URL=http://localhost:5000/api
-   REACT_APP_SOCKET_URL=http://localhost:5000
-   ```
-
-5. **Start the application**
+   # Install server dependencies
+   cd server && npm install
    
-   **Option 1: Start both servers simultaneously (from root)**
+   # Install client dependencies
+   cd ../client && npm install
+   ```
+
+2. **Environment Configuration**
+   
+   Copy and configure environment files:
    ```bash
+   # Server environment
+   cp server/.env.example server/.env
+   # Edit server/.env with your database URL and secrets
+   
+   # Client environment  
+   cp client/.env.example client/.env
+   # Edit client/.env if needed (defaults work for local development)
+   ```
+
+3. **Start the application**
+   ```bash
+   # From the root directory
    npm run dev
-   ```
    
-   **Option 2: Start servers separately**
-   
-   Terminal 1 (Backend):
-   ```bash
-   cd server
-   npm start
-   ```
-   
-   Terminal 2 (Frontend):
-   ```bash
-   cd client
-   npm start
+   # Or start separately:
+   # Terminal 1: cd server && npm start
+   # Terminal 2: cd client && npm start
    ```
 
-6. **Access the application**
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:5000
-   - MongoDB: mongodb://localhost:27017
+4. **Open your browser**
+   - Application: http://localhost:3000
+   - API: http://localhost:5000
 
 ## 📁 Project Structure
 
 ```
 mern-dashboard/
 ├── client/                 # React frontend
-│   ├── public/            # Static assets
 │   ├── src/
-│   │   ├── components/    # Reusable UI components
+│   │   ├── components/    # UI components
 │   │   ├── pages/         # Page components
-│   │   ├── contexts/      # React contexts
-│   │   ├── hooks/         # Custom hooks
-│   │   ├── services/      # API services
-│   │   └── utils/         # Utility functions
-│   ├── package.json
-│   └── tailwind.config.js
-├── server/                # Node.js backend
-│   ├── config/           # Configuration files
-│   ├── middleware/       # Express middleware
-│   ├── models/           # MongoDB models
-│   ├── routes/           # API routes
-│   ├── socket/           # Socket.IO handlers
-│   ├── index.js          # Server entry point
+│   │   ├── hooks/         # Custom React hooks
+│   │   └── services/      # API services
 │   └── package.json
-├── README.md
-└── package.json          # Root package.json
+├── server/                # Node.js backend
+│   ├── routes/           # API endpoints
+│   ├── models/           # Database models
+│   ├── socket/           # Real-time handlers
+│   └── package.json
+└── README.md
 ```
 
-## 🔄 API Endpoints
+## � API Overview
 
-### Authentication
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `GET /api/auth/me` - Get current user
+### Core Endpoints
+- **Authentication**: Register, login, user management
+- **Boards**: CRUD operations for boards and elements
+- **Sharing**: Create and manage share links
+- **Real-time**: Socket.IO events for live collaboration
 
-### Boards
-- `GET /api/boards` - Get user's boards
-- `POST /api/boards` - Create new board
-- `GET /api/boards/:id` - Get specific board
-- `PUT /api/boards/:id` - Update board
-- `DELETE /api/boards/:id` - Delete board
+### Socket Events
+- Canvas updates and element synchronization
+- User presence and cursor tracking
+- Real-time notifications
 
-### Share Links
-- `GET /api/boards/:id/share-links` - Get board's share links
-- `POST /api/boards/:id/share-links` - Create share link
-- `DELETE /api/boards/:id/share-links/:linkId` - Revoke share link
-- `GET /api/shared/:token` - Access shared board
+## 🌐 Deployment
 
-## 🔌 Socket.IO Events
-
-### Client → Server
-- `join-board` - Join a board room
-- `leave-board` - Leave a board room
-- `canvas-update` - Send canvas changes
-- `cursor-move` - Send cursor position
-
-### Server → Client
-- `canvas-update` - Receive canvas changes
-- `user-joined` - User joined the board
-- `user-left` - User left the board
-- `cursor-update` - Receive cursor positions
-
-## 🧪 Testing
-
-```bash
-# Run client tests
-cd client
-npm test
-
-# Run server tests (if configured)
-cd server
-npm test
-```
-
-## 📦 Build for Production
-
-```bash
-# Build client
-cd client
-npm run build
-
-# The build folder will contain the production-ready files
-```
+The application is ready for deployment on platforms like:
+- **Frontend**: Netlify, Vercel, or any static hosting
+- **Backend**: Heroku, Railway, DigitalOcean, or AWS
+- **Database**: MongoDB Atlas (recommended for production)
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the project
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
 5. Open a Pull Request
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
 ## 🙏 Acknowledgments
 
-- Socket.IO for real-time communication
-- MongoDB for flexible data storage
-- Tailwind CSS for rapid UI development
-- React team for the amazing framework
-
-## 📧 Contact
-
-Your Name - your.email@example.com
-
-Project Link: [https://github.com/yourusername/mern-dashboard](https://github.com/yourusername/mern-dashboard)
+Built with modern web technologies and inspired by collaborative tools like Figma and Miro.
 
 ---
 
-**Built with ❤️ using the MERN stack**
+**⭐ Star this repo if you find it useful!**
