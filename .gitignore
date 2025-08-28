@@ -92,3 +92,14 @@ client/build/
 *.db
 *.sqlite
 *.sqlite3
+
+# Development and setup files
+DEPLOYMENT_GUIDE.md
+DEPLOYMENT_STATUS.md
+GOOGLE_OAUTH_SETUP.md
+OAUTH_QUICK_SETUP.md
+RESUME_DESCRIPTIONS.md
+check-oauth.js
+generate-secrets.js
+*/.env.production.template
+.env.production.template
