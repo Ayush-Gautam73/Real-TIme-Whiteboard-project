@@ -19,6 +19,9 @@ RUN npm run build
 # Production stage with nginx
 FROM nginx:alpine
 
+# Install curl for health checks
+RUN apk add --no-cache curl
+
 # Copy built assets from build stage
 COPY --from=build /app/build /usr/share/nginx/html
 
