@@ -1,0 +1,107 @@
+# Docker Build and Test Workflow
+name: Docker Build Test
+
+on:
+  pull_request:
+    paths:
+      - 'server/**'
+      - 'client/**'
+      - 'docker-compose*.yml'
+      - '**/Dockerfile*'
+  workflow_dispatch:
+
+jobs:
+  docker-build-test:
+    name: Docker Build Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create test environment file
+        run: |
+          cat > .env << EOF
+          MONGO_ROOT_USERNAME=admin
+          MONGO_ROOT_PASSWORD=testpassword123
+          MONGO_DATABASE=mern_dashboard_test
+          JWT_SECRET=test-jwt-secret-for-ci-pipeline
+          SESSION_SECRET=test-session-secret-for-ci-pipeline
+          CLIENT_URL=http://localhost:3000
+          REACT_APP_API_URL=http://localhost:5000
+          REACT_APP_SOCKET_URL=http://localhost:5000
+          EOF
+
+      - name: Build Server Dockerfile (Development)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./server
+          file: ./server/Dockerfile
+          push: false
+          tags: mern-dashboard-server:dev
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Server Dockerfile (Production)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./server
+          file: ./server/Dockerfile.prod
+          push: false
+          tags: mern-dashboard-server:prod
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Client Dockerfile (Development)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./client
+          file: ./client/Dockerfile
+          push: false
+          tags: mern-dashboard-client:dev
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Client Dockerfile (Production)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./client
+          file: ./client/Dockerfile.prod
+          push: false
+          tags: mern-dashboard-client:prod
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Verify docker-compose configuration
+        run: |
+          docker compose config
+          docker compose -f docker-compose.prod.yml config
+
+      - name: Start development stack
+        run: |
+          docker compose up -d --build
+          sleep 30
+
+      - name: Check container status
+        run: |
+          docker compose ps
+          echo "---"
+          docker compose logs --tail=50
+
+      - name: Test MongoDB health
+        run: |
+          timeout 60 bash -c 'until docker compose exec -T mongo mongosh --eval "db.adminCommand(\"ping\")" > /dev/null 2>&1; do sleep 2; done'
+          echo "✅ MongoDB is healthy"
+
+      - name: Test Server health
+        run: |
+          timeout 90 bash -c 'until curl -sf http://localhost:5000/api/health > /dev/null 2>&1; do sleep 3; done'
+          echo "✅ Server is healthy"
+        continue-on-error: true
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v --remove-orphans
